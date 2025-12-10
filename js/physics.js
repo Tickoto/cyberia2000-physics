@@ -212,7 +212,14 @@ export class PhysicsSystem {
     }
 
     step(delta, terrainSampler) {
-        this.bodies.forEach(body => this.integrate(body, delta, terrainSampler));
+        // Simple sub-stepping to improve stability on slow frames
+        const maxStep = 1 / 60;
+        const iterations = Math.max(1, Math.ceil(delta / maxStep));
+        const dt = delta / iterations;
+
+        for (let i = 0; i < iterations; i++) {
+            this.bodies.forEach(body => this.integrate(body, dt, terrainSampler));
+        }
     }
 
     integrate(body, delta, terrainSampler) {
@@ -257,20 +264,20 @@ export class PhysicsSystem {
 
             horizontal.set(body.velocity.x, 0, body.velocity.z);
             const slide = this.projectOntoPlane(horizontal, groundNormal);
-            body.velocity.x = slide.x * Math.max(0, 1 - body.friction * delta);
-            body.velocity.z = slide.z * Math.max(0, 1 - body.friction * delta);
+            body.velocity.x = slide.x * Math.max(0, 1 - body.friction * delta * 0.75);
+            body.velocity.z = slide.z * Math.max(0, 1 - body.friction * delta * 0.75);
             body.grounded = true;
 
-            if (vertical < -1 && body.bounciness > 0) {
-                body.velocity.addScaledVector(groundNormal, -vertical * body.bounciness * 0.25);
+            if (vertical < -1 && body.bounciness > 0.01) {
+                body.velocity.addScaledVector(groundNormal, -vertical * body.bounciness * 0.2);
             }
         } else if (penetration > -this.stepHeight && movingDownward) {
             body.position.y += Math.max(penetration, 0);
             body.velocity.y = Math.max(body.velocity.y, -1.5);
             body.grounded = true;
-        } else if (Math.abs(penetration) < 0.25 && movingDownward) {
-            body.position.y = THREE.MathUtils.lerp(body.position.y, desiredHeight, 0.35);
-            body.velocity.y = Math.max(body.velocity.y, -2.5);
+        } else if (Math.abs(penetration) < 0.35 && movingDownward) {
+            body.position.y = THREE.MathUtils.lerp(body.position.y, desiredHeight, 0.5);
+            body.velocity.y = Math.max(body.velocity.y, -2.0);
             body.grounded = true;
         }
 

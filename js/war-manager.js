@@ -223,8 +223,14 @@ export class WarManager {
             }
 
             if (unit.mesh.position.distanceTo(playerPos) > 500) {
-                this.scene.remove(unit.mesh);
-                this.units.splice(i, 1);
+                // Instead of despawning forever, recycle the unit back near the player
+                const respawnAngle = Math.random() * Math.PI * 2;
+                const respawnDist = 220 + Math.random() * 80;
+                const nx = playerPos.x + Math.cos(respawnAngle) * respawnDist;
+                const nz = playerPos.z + Math.sin(respawnAngle) * respawnDist;
+                const ny = unit.type === 'heli' ? 80 + Math.random() * 20 : getTerrainHeight(nx, nz) + 1.25;
+                unit.mesh.position.set(nx, ny, nz);
+                unit.mesh.rotation.y = respawnAngle;
             }
         }
 

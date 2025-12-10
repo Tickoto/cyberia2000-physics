@@ -189,11 +189,18 @@ export class WorldManager {
         // Use CENTER influence to determine consistent urban biome for entire chunk
         // This prevents morphing between settlement types within the same area
         const centerInfluence = getCityInfluence(centerX, centerZ);
-        const urbanBiome = getUrbanBiomeType(centerInfluence);
+        let urbanBiome = getUrbanBiomeType(centerInfluence);
         const isUrban = urbanBiome !== null;
 
+        // Guarantee a starter city hub near origin so the world never feels empty
+        const distanceFromOrigin = Math.hypot(centerX, centerZ);
+        const forcedUrban = distanceFromOrigin < CONFIG.chunkSize * 4;
+        if (forcedUrban && !urbanBiome) {
+            urbanBiome = URBAN_BIOMES.city;
+        }
+
         // Determine if this chunk should generate city content based on center influence only
-        const isCity = isUrban;
+        const isCity = isUrban || forcedUrban;
         const colliders = [];
 
         const segments = 40;
@@ -1046,10 +1053,10 @@ export class WorldManager {
             leaves.position.y = 6;
             tree.add(leaves);
 
-            tree.position.set(tx, ty, tz);
+            tree.position.set(tx, ty - 0.25, tz);
             group.add(tree);
             colliders.push(new THREE.Box3().setFromCenterAndSize(
-                new THREE.Vector3(tx, ty + 2, tz),
+                new THREE.Vector3(tx, ty + 1.75, tz),
                 new THREE.Vector3(1.2, 4, 1.2)
             ));
         }
