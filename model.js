@@ -13,8 +13,8 @@ const {
     DoubleSide
 } = THREE;
 
-const createFaceTexture = (skin = '#f7d8c2') => {
-    const size = 128;
+const createFaceTexture = (skin = '#f6d6c3') => {
+    const size = 160;
     const canvas = document.createElement('canvas');
     canvas.width = canvas.height = size;
     const ctx = canvas.getContext('2d');
@@ -22,112 +22,139 @@ const createFaceTexture = (skin = '#f7d8c2') => {
     ctx.fillStyle = skin;
     ctx.fillRect(0, 0, size, size);
 
-    // Soft vertical shading for depth
-    const faceShade = ctx.createLinearGradient(0, 0, 0, size);
+    // Gentle vertical shading and soft jaw line
+    const faceShade = ctx.createLinearGradient(0, 12, 0, size);
     faceShade.addColorStop(0, 'rgba(0,0,0,0.02)');
-    faceShade.addColorStop(0.55, 'rgba(0,0,0,0.08)');
-    faceShade.addColorStop(1, 'rgba(0,0,0,0.12)');
+    faceShade.addColorStop(0.5, 'rgba(0,0,0,0.06)');
+    faceShade.addColorStop(1, 'rgba(0,0,0,0.1)');
     ctx.fillStyle = faceShade;
-    ctx.fillRect(8, 10, size - 16, size - 20);
+    ctx.fillRect(10, 12, size - 20, size - 18);
 
-    // Cheek warmth
-    ctx.fillStyle = 'rgba(242, 166, 150, 0.5)';
+    // Subtle cheek warmth and highlight
+    const blush = ctx.createRadialGradient(40, 90, 6, 40, 90, 18);
+    blush.addColorStop(0, 'rgba(243, 180, 168, 0.65)');
+    blush.addColorStop(1, 'rgba(243, 180, 168, 0)');
+    ctx.fillStyle = blush;
     ctx.beginPath();
-    ctx.ellipse(38, 74, 12, 8, -0.2, 0, Math.PI * 2);
-    ctx.ellipse(size - 38, 74, 12, 8, 0.2, 0, Math.PI * 2);
+    ctx.arc(40, 90, 18, 0, Math.PI * 2);
     ctx.fill();
+    ctx.save();
+    ctx.translate(size - 80, 0);
+    ctx.fillStyle = blush;
+    ctx.beginPath();
+    ctx.arc(40, 90, 18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
 
-    // Eyes with soft lashes and gradient iris
+    // Eyes inspired by the provided anime reference
     const drawEye = (cx, flip = 1) => {
         ctx.save();
-        ctx.translate(cx, 64);
+        ctx.translate(cx, 76);
         ctx.scale(flip, 1);
 
-        ctx.fillStyle = '#0b0d12';
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 16, 9, 0, 0.08 * Math.PI, Math.PI - 0.08 * Math.PI);
-        ctx.fill();
-
-        ctx.fillStyle = '#f7f3f1';
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 14, 8, 0, 0, Math.PI);
-        ctx.fill();
-
-        const irisGrad = ctx.createRadialGradient(0, 0, 1, 0, 0, 9);
-        irisGrad.addColorStop(0, '#e9d4f9');
-        irisGrad.addColorStop(0.6, '#c19ddc');
-        irisGrad.addColorStop(1, '#7e5c9f');
-        ctx.fillStyle = irisGrad;
-        ctx.beginPath();
-        ctx.arc(0, 0, 7.5, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#0b0d12';
-        ctx.beginPath();
-        ctx.arc(0, 0, 3.2, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(-2.5, -2.5, 2.2, 0, Math.PI * 2);
-        ctx.arc(3.4, 1.2, 1.4, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Lower lash shadow
-        ctx.strokeStyle = 'rgba(0,0,0,0.45)';
-        ctx.lineWidth = 2.4;
+        // Liner
+        ctx.strokeStyle = '#2a1c1a';
+        ctx.lineWidth = 5.2;
         ctx.lineCap = 'round';
         ctx.beginPath();
-        ctx.moveTo(-12, 4);
-        ctx.quadraticCurveTo(0, 8, 12, 4);
+        ctx.ellipse(0, 0, 20, 10, 0.02 * Math.PI, 0.08 * Math.PI, Math.PI - 0.08 * Math.PI);
+        ctx.stroke();
+
+        // Sclera
+        ctx.fillStyle = '#fdfaf6';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 18, 9, 0, 0, Math.PI);
+        ctx.fill();
+
+        // Eye shadow
+        ctx.fillStyle = 'rgba(160, 122, 142, 0.25)';
+        ctx.beginPath();
+        ctx.ellipse(0, -4, 18, 8, 0, 0, Math.PI);
+        ctx.fill();
+
+        // Iris and pupil
+        const irisGrad = ctx.createRadialGradient(0, -1, 1, 0, -1, 10);
+        irisGrad.addColorStop(0, '#f4ebff');
+        irisGrad.addColorStop(0.55, '#c3b0df');
+        irisGrad.addColorStop(1, '#7c6ca8');
+        ctx.fillStyle = irisGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, 9.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#1a1115';
+        ctx.beginPath();
+        ctx.arc(0, 0, 3.6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Highlights
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(-4, -4.5, 2.4, 0, Math.PI * 2);
+        ctx.arc(4.5, 0.5, 1.6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Lower lash and waterline
+        ctx.strokeStyle = 'rgba(64, 44, 52, 0.55)';
+        ctx.lineWidth = 2.6;
+        ctx.beginPath();
+        ctx.moveTo(-12, 5);
+        ctx.quadraticCurveTo(0, 9, 12, 5);
         ctx.stroke();
 
         ctx.restore();
     };
 
-    drawEye(46, 1);
-    drawEye(size - 46, -1);
+    drawEye(52, 1);
+    drawEye(size - 52, -1);
 
-    // Brows with gentle arch
-    ctx.strokeStyle = '#2d1d1a';
-    ctx.lineWidth = 5;
+    // Brows with mature arch
+    ctx.strokeStyle = '#2b1c18';
+    ctx.lineWidth = 5.6;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(28, 46);
-    ctx.quadraticCurveTo(44, 40, 60, 46);
-    ctx.moveTo(size - 28, 46);
-    ctx.quadraticCurveTo(size - 44, 40, size - 60, 46);
+    ctx.moveTo(34, 58);
+    ctx.quadraticCurveTo(50, 50, 68, 58);
+    ctx.moveTo(size - 34, 58);
+    ctx.quadraticCurveTo(size - 50, 50, size - 68, 58);
     ctx.stroke();
 
-    // Nose shading
-    ctx.strokeStyle = '#cc8f78';
-    ctx.lineWidth = 2;
+    // Nose highlight and bridge shadow
+    ctx.strokeStyle = '#c18d78';
+    ctx.lineWidth = 2.2;
     ctx.beginPath();
-    ctx.moveTo(size * 0.5 - 2, 62);
-    ctx.quadraticCurveTo(size * 0.52, 78, size * 0.5 + 1, 86);
+    ctx.moveTo(size * 0.5 - 2, 76);
+    ctx.quadraticCurveTo(size * 0.52, 92, size * 0.5 + 1, 104);
     ctx.stroke();
 
-    // Lip shape
-    ctx.strokeStyle = '#b16169';
-    ctx.lineWidth = 3.2;
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = 1.6;
     ctx.beginPath();
-    ctx.moveTo(48, 98);
-    ctx.quadraticCurveTo(size / 2, 106, size - 48, 98);
+    ctx.moveTo(size * 0.5 - 0.5, 72);
+    ctx.lineTo(size * 0.5 - 0.5, 86);
     ctx.stroke();
-    ctx.strokeStyle = '#dca6a4';
-    ctx.lineWidth = 2;
+
+    // Lips with light makeup
+    ctx.fillStyle = '#b86c73';
     ctx.beginPath();
-    ctx.moveTo(48, 98);
-    ctx.quadraticCurveTo(size / 2, 101, size - 48, 98);
-    ctx.stroke();
+    ctx.moveTo(58, 120);
+    ctx.quadraticCurveTo(size / 2, 126, size - 58, 120);
+    ctx.quadraticCurveTo(size / 2, 129, 58, 120);
+    ctx.fill();
+
+    ctx.fillStyle = '#dba1a3';
+    ctx.beginPath();
+    ctx.moveTo(58, 120);
+    ctx.quadraticCurveTo(size / 2, 123, size - 58, 120);
+    ctx.fill();
 
     // Chin and jaw softness
-    const chinGradient = ctx.createRadialGradient(size / 2, 110, 4, size / 2, 110, 18);
+    const chinGradient = ctx.createRadialGradient(size / 2, 132, 5, size / 2, 132, 22);
     chinGradient.addColorStop(0, 'rgba(0,0,0,0.08)');
     chinGradient.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = chinGradient;
     ctx.beginPath();
-    ctx.arc(size / 2, 112, 22, Math.PI, 0);
+    ctx.arc(size / 2, 134, 28, Math.PI, 0);
     ctx.fill();
 
     const tex = new CanvasTexture(canvas);
@@ -160,13 +187,13 @@ const createBackSigilTexture = (accent = '#d11111') => {
     ctx.closePath();
     ctx.fill();
 
-    // Glow
-    const glow = ctx.createRadialGradient(size / 2, size / 2, size * 0.2, size / 2, size / 2, size * 0.4);
-    glow.addColorStop(0, 'rgba(209,17,17,0.35)');
+    // Glow feather
+    const glow = ctx.createRadialGradient(size / 2, size / 2, size * 0.14, size / 2, size / 2, size * 0.4);
+    glow.addColorStop(0, 'rgba(209,17,17,0.55)');
     glow.addColorStop(1, 'rgba(209,17,17,0)');
     ctx.fillStyle = glow;
     ctx.beginPath();
-    ctx.arc(size / 2, size / 2, size * 0.4, 0, Math.PI * 2);
+    ctx.arc(size / 2, size / 2, size * 0.38, 0, Math.PI * 2);
     ctx.fill();
 
     const tex = new CanvasTexture(canvas);
@@ -183,7 +210,7 @@ const MATERIALS = {
     hair: new MeshStandardMaterial({ color: new Color('#c54f5c'), roughness: 0.35 }),
     jacket: new MeshStandardMaterial({ color: new Color('#121620'), roughness: 0.4, metalness: 0.1 }),
     jacketDetail: new MeshStandardMaterial({ color: new Color('#1b2538'), roughness: 0.42 }),
-    jacketEmblem: new MeshStandardMaterial({ color: new Color('#121620'), roughness: 0.42, transparent: true, map: createBackSigilTexture(), emissive: new Color('#d11111'), emissiveIntensity: 0.35, side: DoubleSide }),
+    jacketEmblem: new MeshStandardMaterial({ color: new Color('#ffffff'), roughness: 0.32, metalness: 0.08, transparent: true, map: createBackSigilTexture(), emissive: new Color('#b01010'), emissiveIntensity: 0.55, side: DoubleSide }),
     shirt: new MeshStandardMaterial({ color: new Color('#a8202a'), roughness: 0.48 }),
     pants: new MeshStandardMaterial({ color: new Color('#243957'), roughness: 0.6 }),
     boots: new MeshStandardMaterial({ color: new Color('#0c0c0e'), roughness: 0.65 }),
@@ -408,9 +435,9 @@ export class ModelRig {
         chestGroup.add(band);
         storeBindPose(band);
 
-        const backSigil = new Mesh(new CircleGeometry(0.15, 24), MATERIALS.jacketEmblem);
-        backSigil.position.set(0, 0.08, 0.16);
-        chestGroup.add(backSigil);
+        const backSigil = new Mesh(new CircleGeometry(0.15, 64), MATERIALS.jacketEmblem);
+        backSigil.position.set(0, 0.0, jacketBack.geometry.parameters.depth * 0.5 + 0.001);
+        jacketBack.add(backSigil);
         storeBindPose(backSigil);
 
         const shadow = new Mesh(new CircleGeometry(0.55, 12), MATERIALS.accent.clone());
