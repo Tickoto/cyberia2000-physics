@@ -22,6 +22,7 @@ class PhysicsWorld {
         // Event queues
         this.collisionEvents = [];
         this.contactEvents = [];
+        this.eventQueue = null;
 
         // Physics groups
         this.COLLISION_GROUPS = {
@@ -51,6 +52,7 @@ class PhysicsWorld {
 
         const gravity = CONFIG.physics.gravity;
         this.world = new RAPIER.World({ x: gravity.x, y: gravity.y, z: gravity.z });
+        this.eventQueue = new RAPIER.EventQueue(true);
 
         // Configure solver
         this.world.numSolverIterations = 4;
@@ -73,11 +75,15 @@ class PhysicsWorld {
         this.contactEvents = [];
 
         // Step physics
-        this.world.step();
+        this.world.step(this.eventQueue);
 
-        // Collect collision events
-        this.world.contactsWith(null, (contact) => {
-            this.contactEvents.push(contact);
+        // Collect contact events through the Rapier event queue
+        this.eventQueue.drainContactEvents((handle1, handle2, started) => {
+            this.contactEvents.push({
+                handle1,
+                handle2,
+                started
+            });
         });
     }
 
