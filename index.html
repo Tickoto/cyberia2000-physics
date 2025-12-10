@@ -189,18 +189,9 @@
     <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
 
-    <!-- Shared modules -->
-    <script src="shared/config.js"></script>
-    <script src="shared/terrain-noise.js"></script>
+    <script type="module">
+        import { GameClient } from './js/game-client.js';
 
-    <!-- Client modules -->
-    <script src="js/network-client.js"></script>
-    <script src="js/terrain-renderer.js"></script>
-    <script src="js/vehicle-renderer.js"></script>
-    <script src="js/player-controller.js"></script>
-    <script src="js/game-client.js"></script>
-
-    <script>
         let gameClient = null;
 
         async function startGame() {
@@ -292,6 +283,10 @@
                 femaleBtn.classList.remove('active');
             }
         }
+
+        // Expose functions for inline handlers
+        window.startGame = startGame;
+        window.setGender = setGender;
     </script>
 </body>
 </html>

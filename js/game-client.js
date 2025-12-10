@@ -3,7 +3,14 @@
  * Entry point for the Cyberia 2000 networked physics client
  */
 
-class GameClient {
+import { CONFIG } from '../shared/config.js';
+import { TerrainNoise } from '../shared/terrain-noise.js';
+import { NetworkClient } from './network-client.js';
+import { TerrainRenderer } from './terrain-renderer.js';
+import { VehicleRenderer } from './vehicle-renderer.js';
+import { PlayerController } from './player-controller.js';
+
+export class GameClient {
     constructor() {
         // Three.js components
         this.scene = null;

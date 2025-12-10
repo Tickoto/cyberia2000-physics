@@ -374,44 +374,28 @@ function getCityBuildings(chunkX, chunkZ, chunkSize, seed = 7777) {
 }
 
 // Export for both Node.js and browser
+export const TerrainNoise = {
+    perlin,
+    fbm,
+    ridgeNoise,
+    warpedNoise,
+    seededRandom,
+    chunkHash,
+    getBiomeAt,
+    getCityInfluence,
+    getCityType,
+    getTerrainHeight,
+    getTerrainNormal,
+    generateChunkHeightmap,
+    isWater,
+    getChunkSpawnPoints,
+    getCityBuildings,
+    BIOME_PROPERTIES,
+    CITY_PROPERTIES
+};
+
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {
-        perlin,
-        fbm,
-        ridgeNoise,
-        warpedNoise,
-        seededRandom,
-        chunkHash,
-        getBiomeAt,
-        getCityInfluence,
-        getCityType,
-        getTerrainHeight,
-        getTerrainNormal,
-        generateChunkHeightmap,
-        isWater,
-        getChunkSpawnPoints,
-        getCityBuildings,
-        BIOME_PROPERTIES,
-        CITY_PROPERTIES
-    };
+    module.exports = TerrainNoise;
 } else if (typeof window !== 'undefined') {
-    window.TerrainNoise = {
-        perlin,
-        fbm,
-        ridgeNoise,
-        warpedNoise,
-        seededRandom,
-        chunkHash,
-        getBiomeAt,
-        getCityInfluence,
-        getCityType,
-        getTerrainHeight,
-        getTerrainNormal,
-        generateChunkHeightmap,
-        isWater,
-        getChunkSpawnPoints,
-        getCityBuildings,
-        BIOME_PROPERTIES,
-        CITY_PROPERTIES
-    };
+    window.TerrainNoise = TerrainNoise;
 }

@@ -3,7 +3,7 @@
  * Used by both server and client
  */
 
-const CONFIG = {
+export const CONFIG = {
     // World settings
     world: {
         seed: 7777,
@@ -288,7 +288,7 @@ const CONFIG = {
 
 // Export for both Node.js and browser
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = CONFIG;
+    module.exports = { CONFIG };
 } else if (typeof window !== 'undefined') {
     window.CONFIG = CONFIG;
 }

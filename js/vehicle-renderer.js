@@ -3,7 +3,9 @@
  * Renders vehicles and handles local vehicle input
  */
 
-class VehicleRenderer {
+import { CONFIG } from '../shared/config.js';
+
+export class VehicleRenderer {
     constructor(scene, networkClient) {
         this.scene = scene;
         this.networkClient = networkClient;

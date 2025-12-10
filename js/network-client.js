@@ -3,7 +3,9 @@
  * Handles communication with the physics server
  */
 
-class NetworkClient {
+import { CONFIG } from '../shared/config.js';
+
+export class NetworkClient {
     constructor(serverUrl) {
         this.serverUrl = serverUrl;
         this.ws = null;
