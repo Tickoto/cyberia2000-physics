@@ -21,35 +21,69 @@ const createFaceTexture = (skin = '#f7d8c2') => {
     ctx.fillStyle = skin;
     ctx.fillRect(0, 0, size, size);
 
-    // Cheeks
+    // Soft cheek blush
     ctx.fillStyle = '#f1b4a4';
     ctx.beginPath();
     ctx.arc(20, 38, 6, 0, Math.PI * 2);
     ctx.arc(size - 20, 38, 6, 0, Math.PI * 2);
     ctx.fill();
 
-    // Eyes
-    ctx.fillStyle = '#0d0d0f';
+    // Under-eye shading
+    ctx.fillStyle = 'rgba(0,0,0,0.08)';
+    ctx.fillRect(14, 30, 12, 4);
+    ctx.fillRect(size - 26, 30, 12, 4);
+
+    // Eyes and pupils
+    ctx.fillStyle = '#0b0d12';
     ctx.beginPath();
-    ctx.arc(20, 28, 4, 0, Math.PI * 2);
-    ctx.arc(size - 20, 28, 4, 0, Math.PI * 2);
+    ctx.arc(20, 28, 4.5, 0, Math.PI * 2);
+    ctx.arc(size - 20, 28, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#f2f5ff';
+    ctx.beginPath();
+    ctx.arc(18.5, 26.5, 1.4, 0, Math.PI * 2);
+    ctx.arc(size - 21.5, 26.5, 1.4, 0, Math.PI * 2);
     ctx.fill();
 
-    // Nose
+    // Brows
+    ctx.strokeStyle = '#341c1a';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(14, 22);
+    ctx.quadraticCurveTo(20, 20, 25, 22);
+    ctx.moveTo(size - 14, 22);
+    ctx.quadraticCurveTo(size - 20, 20, size - 25, 22);
+    ctx.stroke();
+
+    // Nose bridge and tip
     ctx.strokeStyle = '#d48c78';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(size * 0.48, 30);
-    ctx.lineTo(size * 0.5, 36);
+    ctx.moveTo(size * 0.49, 27);
+    ctx.quadraticCurveTo(size * 0.52, 34, size * 0.5, 37);
     ctx.stroke();
 
-    // Mouth
+    // Lips
     ctx.strokeStyle = '#b1545d';
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(24, 46);
     ctx.quadraticCurveTo(size / 2, 52, size - 24, 46);
     ctx.stroke();
+    ctx.strokeStyle = '#c77c86';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(24, 46);
+    ctx.quadraticCurveTo(size / 2, 49, size - 24, 46);
+    ctx.stroke();
+
+    // Chin shading
+    const gradient = ctx.createLinearGradient(0, 46, 0, 64);
+    gradient.addColorStop(0, 'rgba(0,0,0,0.04)');
+    gradient.addColorStop(1, 'rgba(0,0,0,0.12)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(16, 46, size - 32, 12);
 
     const tex = new CanvasTexture(canvas);
     tex.anisotropy = 4;
@@ -57,18 +91,45 @@ const createFaceTexture = (skin = '#f7d8c2') => {
     return tex;
 };
 
+const createBackSigilTexture = (base = '#0f121c', accent = '#d11111') => {
+    const size = 64;
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = size;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = base;
+    ctx.fillRect(0, 0, size, size);
+
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size * 0.32, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = accent;
+    ctx.beginPath();
+    ctx.moveTo(size / 2, size * 0.32);
+    ctx.lineTo(size * 0.68, size * 0.64);
+    ctx.lineTo(size * 0.32, size * 0.64);
+    ctx.closePath();
+    ctx.fill();
+
+    return new CanvasTexture(canvas);
+};
+
 const MATERIALS = {
     skin: new MeshStandardMaterial({ color: new Color('#f7d8c2'), roughness: 0.55 }),
-    face: new MeshStandardMaterial({ map: createFaceTexture(), roughness: 0.45 }),
+    skinShadow: new MeshStandardMaterial({ color: new Color('#d6b59f'), roughness: 0.6 }),
+    face: new MeshStandardMaterial({ map: createFaceTexture(), roughness: 0.4 }),
     hair: new MeshStandardMaterial({ color: new Color('#c54f5c'), roughness: 0.35 }),
     jacket: new MeshStandardMaterial({ color: new Color('#121620'), roughness: 0.4, metalness: 0.1 }),
     jacketDetail: new MeshStandardMaterial({ color: new Color('#1b2538'), roughness: 0.42 }),
+    jacketEmblem: new MeshStandardMaterial({ color: new Color('#0f121c'), roughness: 0.42, map: createBackSigilTexture(), emissive: new Color('#d11111'), emissiveIntensity: 0.3 }),
     shirt: new MeshStandardMaterial({ color: new Color('#a8202a'), roughness: 0.48 }),
     pants: new MeshStandardMaterial({ color: new Color('#243957'), roughness: 0.6 }),
     boots: new MeshStandardMaterial({ color: new Color('#0c0c0e'), roughness: 0.65 }),
     holster: new MeshStandardMaterial({ color: new Color('#0a0a0a'), roughness: 0.55 }),
-    accent: new MeshStandardMaterial({ color: new Color('#0d1118'), roughness: 0.6, metalness: 0.12 }),
-    emissive: new MeshStandardMaterial({ color: new Color('#1f4b99'), emissive: new Color('#163b7c'), emissiveIntensity: 0.4 })
+    accent: new MeshStandardMaterial({ color: new Color('#0d1118'), roughness: 0.6, metalness: 0.12 })
 };
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -113,6 +174,12 @@ export class ModelRig {
         midriff.position.y = 0.17;
         hips.add(midriff);
         storeBindPose(midriff);
+
+        const bellyButton = new Mesh(new CircleGeometry(0.012, 16), MATERIALS.skinShadow);
+        bellyButton.rotation.x = -Math.PI / 2;
+        bellyButton.position.set(0, 0.01, 0.101);
+        midriff.add(bellyButton);
+        storeBindPose(bellyButton);
 
         const chestGroup = new Group();
         chestGroup.position.y = 0.12;
@@ -277,12 +344,12 @@ export class ModelRig {
         hips.add(belt);
         storeBindPose(belt);
 
-        const band = new Mesh(new BoxGeometry(0.5, 0.06, 0.14), MATERIALS.emissive);
+        const band = new Mesh(new BoxGeometry(0.5, 0.06, 0.14), MATERIALS.jacket);
         band.position.set(0, -0.02, 0.13);
         chestGroup.add(band);
         storeBindPose(band);
 
-        const backSigil = new Mesh(new BoxGeometry(0.22, 0.24, 0.015), MATERIALS.emissive);
+        const backSigil = new Mesh(new BoxGeometry(0.26, 0.26, 0.02), MATERIALS.jacketEmblem);
         backSigil.position.set(0, 0.08, 0.16);
         chestGroup.add(backSigil);
         storeBindPose(backSigil);
