@@ -3,7 +3,10 @@
  * Renders terrain chunks using data from server or local generation
  */
 
-class TerrainRenderer {
+import { CONFIG } from '../shared/config.js';
+import { TerrainNoise } from '../shared/terrain-noise.js';
+
+export class TerrainRenderer {
     constructor(scene, networkClient) {
         this.scene = scene;
         this.networkClient = networkClient;

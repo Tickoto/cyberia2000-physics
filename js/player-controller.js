@@ -3,7 +3,9 @@
  * Handles player input, rendering, and client-side prediction
  */
 
-class PlayerController {
+import { CONFIG } from '../shared/config.js';
+
+export class PlayerController {
     constructor(scene, camera, networkClient, terrainRenderer) {
         this.scene = scene;
         this.camera = camera;
