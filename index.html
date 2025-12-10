@@ -191,15 +191,102 @@
 
     <script type="module">
         import { GameClient } from './js/game-client.js';
+        import { Character } from './js/character.js';
 
         let gameClient = null;
+        let previewRenderer = null;
+        let previewScene = null;
+        let previewCamera = null;
+        let previewCharacter = null;
+        let previewFrame = null;
+
+        function buildAppearance() {
+            const skinColor = document.getElementById('cc-skin').value;
+
+            return {
+                skinColor: parseInt(skinColor.replace('#', ''), 16),
+                gender: document.getElementById('btn-female').classList.contains('active') ? 'female' : 'male',
+                height: parseFloat(document.getElementById('cc-height').value),
+                hairStyle: parseInt(document.getElementById('cc-hair').value, 10),
+                hairColor: parseInt(document.getElementById('cc-haircolor').value.replace('#', ''), 16),
+                jacket: parseInt(document.getElementById('cc-jacket').value.replace('#', ''), 16),
+                shirt: parseInt(document.getElementById('cc-shirt').value.replace('#', ''), 16),
+                pants: parseInt(document.getElementById('cc-pants').value.replace('#', ''), 16)
+            };
+        }
+
+        function startPreview() {
+            const container = document.getElementById('cc-preview');
+            previewRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            previewRenderer.setSize(container.clientWidth, container.clientHeight);
+            previewRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(previewRenderer.domElement);
+
+            previewScene = new THREE.Scene();
+            previewScene.background = new THREE.Color(0x0b0b0f);
+            previewCamera = new THREE.PerspectiveCamera(35, container.clientWidth / container.clientHeight, 0.1, 50);
+            previewCamera.position.set(3, 2.5, 4);
+
+            const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+            const directional = new THREE.DirectionalLight(0xffffff, 1);
+            directional.position.set(5, 6, 4);
+            previewScene.add(ambient, directional);
+
+            const floor = new THREE.Mesh(
+                new THREE.CircleGeometry(2.5, 32),
+                new THREE.MeshStandardMaterial({ color: 0x11161b, roughness: 1 })
+            );
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = -0.9;
+            previewScene.add(floor);
+
+            previewCharacter = new Character(true);
+            previewCharacter.group.rotation.y = Math.PI;
+            previewCharacter.group.position.y = -0.1;
+            previewScene.add(previewCharacter.group);
+
+            const updateSize = () => {
+                const { clientWidth, clientHeight } = container;
+                previewCamera.aspect = clientWidth / clientHeight;
+                previewCamera.updateProjectionMatrix();
+                previewRenderer.setSize(clientWidth, clientHeight);
+            };
+
+            window.addEventListener('resize', updateSize);
+            updateSize();
+
+            const animate = () => {
+                previewFrame = requestAnimationFrame(animate);
+                if (previewCharacter) {
+                    previewCharacter.group.rotation.y += 0.005;
+                }
+                previewRenderer.render(previewScene, previewCamera);
+            };
+
+            animate();
+        }
+
+        function updatePreview() {
+            if (!previewCharacter) return;
+            const appearance = buildAppearance();
+
+            previewCharacter.params.gender = appearance.gender;
+            previewCharacter.params.height = appearance.height;
+            previewCharacter.params.skin = `#${appearance.skinColor.toString(16).padStart(6, '0')}`;
+            previewCharacter.params.hair = appearance.hairStyle;
+            previewCharacter.params.hairColor = `#${appearance.hairColor.toString(16).padStart(6, '0')}`;
+            previewCharacter.params.jacketColor = `#${appearance.jacket.toString(16).padStart(6, '0')}`;
+            previewCharacter.params.shirtColor = `#${appearance.shirt.toString(16).padStart(6, '0')}`;
+            previewCharacter.params.pantsColor = `#${appearance.pants.toString(16).padStart(6, '0')}`;
+            previewCharacter.rebuild();
+        }
 
         async function startGame() {
             const joinBtn = document.getElementById('join-btn');
             const statusText = document.getElementById('status-text');
             const serverUrl = document.getElementById('server-url').value;
             const username = document.getElementById('cc-username').value || 'Player';
-            const skinColor = document.getElementById('cc-skin').value;
+            const appearance = buildAppearance();
 
             // Disable button
             joinBtn.disabled = true;
@@ -210,16 +297,7 @@
                 gameClient = new GameClient();
                 gameClient.serverUrl = serverUrl;
                 gameClient.username = username;
-                gameClient.appearance = {
-                    skinColor: parseInt(skinColor.replace('#', ''), 16),
-                    gender: document.getElementById('btn-female').classList.contains('active') ? 'female' : 'male',
-                    height: parseFloat(document.getElementById('cc-height').value),
-                    hairStyle: parseInt(document.getElementById('cc-hair').value, 10),
-                    hairColor: parseInt(document.getElementById('cc-haircolor').value.replace('#', ''), 16),
-                    jacket: parseInt(document.getElementById('cc-jacket').value.replace('#', ''), 16),
-                    shirt: parseInt(document.getElementById('cc-shirt').value.replace('#', ''), 16),
-                    pants: parseInt(document.getElementById('cc-pants').value.replace('#', ''), 16)
-                };
+                gameClient.appearance = appearance;
 
                 // Initialize
                 await gameClient.init();
@@ -257,6 +335,8 @@
         // Focus username input on load
         window.onload = () => {
             document.getElementById('cc-username').focus();
+            startPreview();
+            updatePreview();
         };
 
         // Handle Enter key
@@ -272,6 +352,15 @@
             }
         });
 
+        const previewInputs = [
+            'cc-height', 'cc-skin', 'cc-hair', 'cc-haircolor', 'cc-jacket', 'cc-shirt', 'cc-pants'
+        ];
+        previewInputs.forEach(id => {
+            const el = document.getElementById(id);
+            el.addEventListener('input', updatePreview);
+            el.addEventListener('change', updatePreview);
+        });
+
         function setGender(gender) {
             const femaleBtn = document.getElementById('btn-female');
             const maleBtn = document.getElementById('btn-male');
@@ -282,6 +371,8 @@
                 maleBtn.classList.add('active');
                 femaleBtn.classList.remove('active');
             }
+
+            updatePreview();
         }
 
         // Expose functions for inline handlers

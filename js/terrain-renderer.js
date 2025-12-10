@@ -190,12 +190,95 @@ export class TerrainRenderer {
             this.scene.add(buildingMesh);
         }
 
+        // Flora / trees
+        const floraMeshes = this.generateFlora(chunkX, chunkZ, biome, heightmap);
+        floraMeshes.forEach(f => this.scene.add(f));
+
         // Store chunk data
         this.chunks.set(key, {
             mesh,
             buildings: buildingMeshes,
-            flora: []
+            flora: floraMeshes
         });
+    }
+
+    /**
+     * Deterministic random generator per chunk
+     */
+    seededRandom(chunkX, chunkZ) {
+        let seed = chunkX * 374761 + chunkZ * 668265 + CONFIG.world.seed;
+        return () => {
+            seed ^= seed << 13;
+            seed ^= seed >> 17;
+            seed ^= seed << 5;
+            return (seed < 0 ? ~seed + 1 : seed) % 1000000 / 1000000;
+        };
+    }
+
+    /**
+     * Create simple tree mesh
+     */
+    createTreeMesh(height = 6, radius = 0.3, foliageHeight = 3, color = 0x2f6b2f) {
+        const group = new THREE.Group();
+
+        const trunk = new THREE.Mesh(
+            new THREE.CylinderGeometry(radius * 0.6, radius, height, 6),
+            new THREE.MeshStandardMaterial({ color: 0x6b4b34, roughness: 0.9 })
+        );
+        trunk.castShadow = true;
+        trunk.receiveShadow = true;
+        trunk.position.y = height / 2;
+        group.add(trunk);
+
+        const foliage = new THREE.Mesh(
+            new THREE.ConeGeometry(radius * 2.5, foliageHeight, 8),
+            new THREE.MeshStandardMaterial({ color, roughness: 0.7 })
+        );
+        foliage.castShadow = true;
+        foliage.receiveShadow = true;
+        foliage.position.y = height + foliageHeight / 2;
+        group.add(foliage);
+
+        return group;
+    }
+
+    /**
+     * Generate deterministic flora based on biome
+     */
+    generateFlora(chunkX, chunkZ, biome, heightmap) {
+        const rand = this.seededRandom(chunkX, chunkZ);
+        const flora = [];
+        const worldX = chunkX * this.chunkSize;
+        const worldZ = chunkZ * this.chunkSize;
+
+        const resolution = this.renderResolution + 1;
+        const pickHeight = (lx, lz) => {
+            const ix = Math.floor((lx / this.chunkSize) * (resolution - 1));
+            const iz = Math.floor((lz / this.chunkSize) * (resolution - 1));
+            return heightmap[iz * resolution + ix] || 0;
+        };
+
+        const floraCount = Math.floor(6 + rand() * 10);
+        for (let i = 0; i < floraCount; i++) {
+            const lx = rand() * this.chunkSize;
+            const lz = rand() * this.chunkSize;
+            const height = pickHeight(lx, lz);
+
+            // Avoid underwater placement
+            if (height < -1) continue;
+
+            const tree = this.createTreeMesh(
+                4 + rand() * 3,
+                0.25 + rand() * 0.1,
+                2 + rand() * 2.5,
+                this.biomeColors[biome] || 0x2f6b2f
+            );
+            tree.position.set(worldX + lx - this.chunkSize / 2, height, worldZ + lz - this.chunkSize / 2);
+
+            flora.push(tree);
+        }
+
+        return flora;
     }
 
     /**
