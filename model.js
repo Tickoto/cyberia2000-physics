@@ -9,11 +9,12 @@ const {
     MeshStandardMaterial,
     CircleGeometry,
     Color,
-    CanvasTexture
+    CanvasTexture,
+    DoubleSide
 } = THREE;
 
 const createFaceTexture = (skin = '#f7d8c2') => {
-    const size = 64;
+    const size = 128;
     const canvas = document.createElement('canvas');
     canvas.width = canvas.height = size;
     const ctx = canvas.getContext('2d');
@@ -21,69 +22,113 @@ const createFaceTexture = (skin = '#f7d8c2') => {
     ctx.fillStyle = skin;
     ctx.fillRect(0, 0, size, size);
 
-    // Soft cheek blush
-    ctx.fillStyle = '#f1b4a4';
+    // Soft vertical shading for depth
+    const faceShade = ctx.createLinearGradient(0, 0, 0, size);
+    faceShade.addColorStop(0, 'rgba(0,0,0,0.02)');
+    faceShade.addColorStop(0.55, 'rgba(0,0,0,0.08)');
+    faceShade.addColorStop(1, 'rgba(0,0,0,0.12)');
+    ctx.fillStyle = faceShade;
+    ctx.fillRect(8, 10, size - 16, size - 20);
+
+    // Cheek warmth
+    ctx.fillStyle = 'rgba(242, 166, 150, 0.5)';
     ctx.beginPath();
-    ctx.arc(20, 38, 6, 0, Math.PI * 2);
-    ctx.arc(size - 20, 38, 6, 0, Math.PI * 2);
+    ctx.ellipse(38, 74, 12, 8, -0.2, 0, Math.PI * 2);
+    ctx.ellipse(size - 38, 74, 12, 8, 0.2, 0, Math.PI * 2);
     ctx.fill();
 
-    // Under-eye shading
-    ctx.fillStyle = 'rgba(0,0,0,0.08)';
-    ctx.fillRect(14, 30, 12, 4);
-    ctx.fillRect(size - 26, 30, 12, 4);
+    // Eyes with soft lashes and gradient iris
+    const drawEye = (cx, flip = 1) => {
+        ctx.save();
+        ctx.translate(cx, 64);
+        ctx.scale(flip, 1);
 
-    // Eyes and pupils
-    ctx.fillStyle = '#0b0d12';
-    ctx.beginPath();
-    ctx.arc(20, 28, 4.5, 0, Math.PI * 2);
-    ctx.arc(size - 20, 28, 4.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#f2f5ff';
-    ctx.beginPath();
-    ctx.arc(18.5, 26.5, 1.4, 0, Math.PI * 2);
-    ctx.arc(size - 21.5, 26.5, 1.4, 0, Math.PI * 2);
-    ctx.fill();
+        ctx.fillStyle = '#0b0d12';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 16, 9, 0, 0.08 * Math.PI, Math.PI - 0.08 * Math.PI);
+        ctx.fill();
 
-    // Brows
-    ctx.strokeStyle = '#341c1a';
-    ctx.lineWidth = 4;
+        ctx.fillStyle = '#f7f3f1';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 14, 8, 0, 0, Math.PI);
+        ctx.fill();
+
+        const irisGrad = ctx.createRadialGradient(0, 0, 1, 0, 0, 9);
+        irisGrad.addColorStop(0, '#e9d4f9');
+        irisGrad.addColorStop(0.6, '#c19ddc');
+        irisGrad.addColorStop(1, '#7e5c9f');
+        ctx.fillStyle = irisGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, 7.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#0b0d12';
+        ctx.beginPath();
+        ctx.arc(0, 0, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(-2.5, -2.5, 2.2, 0, Math.PI * 2);
+        ctx.arc(3.4, 1.2, 1.4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Lower lash shadow
+        ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+        ctx.lineWidth = 2.4;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-12, 4);
+        ctx.quadraticCurveTo(0, 8, 12, 4);
+        ctx.stroke();
+
+        ctx.restore();
+    };
+
+    drawEye(46, 1);
+    drawEye(size - 46, -1);
+
+    // Brows with gentle arch
+    ctx.strokeStyle = '#2d1d1a';
+    ctx.lineWidth = 5;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(14, 22);
-    ctx.quadraticCurveTo(20, 20, 25, 22);
-    ctx.moveTo(size - 14, 22);
-    ctx.quadraticCurveTo(size - 20, 20, size - 25, 22);
+    ctx.moveTo(28, 46);
+    ctx.quadraticCurveTo(44, 40, 60, 46);
+    ctx.moveTo(size - 28, 46);
+    ctx.quadraticCurveTo(size - 44, 40, size - 60, 46);
     ctx.stroke();
 
-    // Nose bridge and tip
-    ctx.strokeStyle = '#d48c78';
+    // Nose shading
+    ctx.strokeStyle = '#cc8f78';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(size * 0.49, 27);
-    ctx.quadraticCurveTo(size * 0.52, 34, size * 0.5, 37);
+    ctx.moveTo(size * 0.5 - 2, 62);
+    ctx.quadraticCurveTo(size * 0.52, 78, size * 0.5 + 1, 86);
     ctx.stroke();
 
-    // Lips
-    ctx.strokeStyle = '#b1545d';
-    ctx.lineWidth = 3;
+    // Lip shape
+    ctx.strokeStyle = '#b16169';
+    ctx.lineWidth = 3.2;
     ctx.beginPath();
-    ctx.moveTo(24, 46);
-    ctx.quadraticCurveTo(size / 2, 52, size - 24, 46);
+    ctx.moveTo(48, 98);
+    ctx.quadraticCurveTo(size / 2, 106, size - 48, 98);
     ctx.stroke();
-    ctx.strokeStyle = '#c77c86';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = '#dca6a4';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(24, 46);
-    ctx.quadraticCurveTo(size / 2, 49, size - 24, 46);
+    ctx.moveTo(48, 98);
+    ctx.quadraticCurveTo(size / 2, 101, size - 48, 98);
     ctx.stroke();
 
-    // Chin shading
-    const gradient = ctx.createLinearGradient(0, 46, 0, 64);
-    gradient.addColorStop(0, 'rgba(0,0,0,0.04)');
-    gradient.addColorStop(1, 'rgba(0,0,0,0.12)');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(16, 46, size - 32, 12);
+    // Chin and jaw softness
+    const chinGradient = ctx.createRadialGradient(size / 2, 110, 4, size / 2, 110, 18);
+    chinGradient.addColorStop(0, 'rgba(0,0,0,0.08)');
+    chinGradient.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = chinGradient;
+    ctx.beginPath();
+    ctx.arc(size / 2, 112, 22, Math.PI, 0);
+    ctx.fill();
 
     const tex = new CanvasTexture(canvas);
     tex.anisotropy = 4;
@@ -91,30 +136,44 @@ const createFaceTexture = (skin = '#f7d8c2') => {
     return tex;
 };
 
-const createBackSigilTexture = (base = '#0f121c', accent = '#d11111') => {
+const createBackSigilTexture = (accent = '#d11111') => {
     const size = 64;
     const canvas = document.createElement('canvas');
     canvas.width = canvas.height = size;
     const ctx = canvas.getContext('2d');
 
-    ctx.fillStyle = base;
-    ctx.fillRect(0, 0, size, size);
+    ctx.clearRect(0, 0, size, size);
 
+    // Outer ring
     ctx.strokeStyle = accent;
     ctx.lineWidth = 6;
     ctx.beginPath();
     ctx.arc(size / 2, size / 2, size * 0.32, 0, Math.PI * 2);
     ctx.stroke();
 
+    // Inner triangle
     ctx.fillStyle = accent;
     ctx.beginPath();
-    ctx.moveTo(size / 2, size * 0.32);
-    ctx.lineTo(size * 0.68, size * 0.64);
-    ctx.lineTo(size * 0.32, size * 0.64);
+    ctx.moveTo(size / 2, size * 0.28);
+    ctx.lineTo(size * 0.7, size * 0.64);
+    ctx.lineTo(size * 0.3, size * 0.64);
     ctx.closePath();
     ctx.fill();
 
-    return new CanvasTexture(canvas);
+    // Glow
+    const glow = ctx.createRadialGradient(size / 2, size / 2, size * 0.2, size / 2, size / 2, size * 0.4);
+    glow.addColorStop(0, 'rgba(209,17,17,0.35)');
+    glow.addColorStop(1, 'rgba(209,17,17,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size * 0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    const tex = new CanvasTexture(canvas);
+    tex.anisotropy = 4;
+    tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+    tex.needsUpdate = true;
+    return tex;
 };
 
 const MATERIALS = {
@@ -124,7 +183,7 @@ const MATERIALS = {
     hair: new MeshStandardMaterial({ color: new Color('#c54f5c'), roughness: 0.35 }),
     jacket: new MeshStandardMaterial({ color: new Color('#121620'), roughness: 0.4, metalness: 0.1 }),
     jacketDetail: new MeshStandardMaterial({ color: new Color('#1b2538'), roughness: 0.42 }),
-    jacketEmblem: new MeshStandardMaterial({ color: new Color('#0f121c'), roughness: 0.42, map: createBackSigilTexture(), emissive: new Color('#d11111'), emissiveIntensity: 0.3 }),
+    jacketEmblem: new MeshStandardMaterial({ color: new Color('#121620'), roughness: 0.42, transparent: true, map: createBackSigilTexture(), emissive: new Color('#d11111'), emissiveIntensity: 0.35, side: DoubleSide }),
     shirt: new MeshStandardMaterial({ color: new Color('#a8202a'), roughness: 0.48 }),
     pants: new MeshStandardMaterial({ color: new Color('#243957'), roughness: 0.6 }),
     boots: new MeshStandardMaterial({ color: new Color('#0c0c0e'), roughness: 0.65 }),
@@ -349,7 +408,7 @@ export class ModelRig {
         chestGroup.add(band);
         storeBindPose(band);
 
-        const backSigil = new Mesh(new BoxGeometry(0.26, 0.26, 0.02), MATERIALS.jacketEmblem);
+        const backSigil = new Mesh(new CircleGeometry(0.15, 24), MATERIALS.jacketEmblem);
         backSigil.position.set(0, 0.08, 0.16);
         chestGroup.add(backSigil);
         storeBindPose(backSigil);
