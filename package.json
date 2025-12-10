@@ -1,0 +1,35 @@
+{
+  "name": "cyberia2000-physics",
+  "version": "2.0.0",
+  "description": "Cyberia 2000 - Networked Physics MMO with Rapier physics engine",
+  "main": "index.html",
+  "scripts": {
+    "server": "cd server && npm start",
+    "server:install": "cd server && npm install",
+    "client": "npx http-server . -p 3000 -c-1",
+    "start": "npm run server",
+    "dev": "concurrently \"npm run server\" \"npm run client\""
+  },
+  "keywords": [
+    "game",
+    "mmo",
+    "physics",
+    "rapier",
+    "three.js",
+    "websocket",
+    "multiplayer"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "http-server": "^14.1.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
