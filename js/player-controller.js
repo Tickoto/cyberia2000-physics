@@ -13,20 +13,53 @@ import { Character } from './character.js';
  * through an options object and drives the local character mesh.
  */
 export class PlayerController {
-    constructor({ scene, camera, worldManager, logChat, keys, mouse, physics, interactionManager, environment }) {
+    constructor(options, camera, networkClient, terrainRenderer) {
+        // Support both the modern options bag and the legacy positional constructor
+        // used by game-client.js. The legacy signature passed (scene, camera,
+        // networkClient, terrainRenderer) which resulted in undefined fields when the
+        // class expected an object. To keep backwards compatibility we normalize the
+        // arguments into an options object here.
+        const normalized = (options && options.scene) ? options : {
+            scene: options,
+            camera,
+            worldManager: null,
+            logChat: () => {},
+            keys: {},
+            mouse: { x: 0, y: 0 },
+            physics: {
+                registerBody: ({ position = new THREE.Vector3(), velocity = new THREE.Vector3(), radius = 0.6, height = 1.7, mass = 85 }) => ({
+                    position,
+                    velocity,
+                    radius,
+                    height,
+                    mass,
+                    grounded: true,
+                    friction: CONFIG.groundFriction,
+                    damping: CONFIG.airDrag,
+                    bounciness: 0.02,
+                    set: () => {}
+                }),
+                step: () => {}
+            },
+            interactionManager: terrainRenderer?.interactionManager || null,
+            environment: null
+        };
+
+        const { scene, worldManager, logChat, keys, mouse, physics, interactionManager, environment } = normalized;
         this.scene = scene;
-        this.camera = camera;
+        this.camera = normalized.camera || camera;
         this.worldManager = worldManager;
         this.logChat = logChat;
-        this.keys = keys;
-        this.mouse = mouse;
+        this.keys = keys || {};
+        this.mouse = mouse || { x: 0, y: 0 };
         this.physics = physics;
         this.interactionManager = interactionManager;
         this.environment = environment;
 
         // Character setup
         this.char = new Character(true);
-        this.scene.add(this.char.group);
+        this.scene?.add?.(this.char.group);
+        this.characterGroup = this.char.group;
 
         // Physics body used by PhysicsSystem
         this.physicsBody = this.physics.registerBody({
@@ -39,6 +72,11 @@ export class PlayerController {
             damping: CONFIG.airDrag,
             bounciness: 0.02
         });
+
+        this.predictedPosition = this.physicsBody.position;
+        this.inVehicle = false;
+        this.vehicleId = null;
+        this.health = 100;
 
         // Camera smoothing
         this.cameraTarget = new THREE.Vector3();
@@ -199,6 +237,49 @@ export class PlayerController {
             }
             this.lastInteractionTarget = target;
         }
+    }
+
+    // Legacy APIs used by game-client.js
+    initPlayer(entityId, clientId, position, appearance) {
+        if (position) {
+            this.char.group.position.set(position.x, position.y, position.z);
+            this.physicsBody.position.copy(this.char.group.position);
+        }
+        if (appearance?.params) {
+            this.char.params = { ...this.char.params, ...appearance.params };
+            this.char.rebuild();
+        }
+        this.predictedPosition = this.physicsBody.position;
+    }
+
+    spawnOtherPlayer() {
+        // Networking placeholder: legacy client expected this, but the modern
+        // controller only manages the local player.
+    }
+
+    removeOtherPlayer() {
+        // Networking placeholder.
+    }
+
+    updateFromServer() {
+        // Networking placeholder.
+    }
+
+    getState() {
+        return {
+            health: this.health,
+            stamina: this.stamina,
+            position: this.getPosition()
+        };
+    }
+
+    getPosition() {
+        return this.physicsBody?.position || this.char.group.position;
+    }
+
+    dispose() {
+        this.scene?.remove?.(this.char.group);
+        this.physics?.bodies?.delete?.(this.physicsBody);
     }
 }
 
