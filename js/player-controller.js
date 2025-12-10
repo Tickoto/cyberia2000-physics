@@ -4,6 +4,7 @@
  */
 
 import { CONFIG } from '../shared/config.js';
+import { Character } from './character.js';
 
 export class PlayerController {
     constructor(scene, camera, networkClient, terrainRenderer) {
@@ -27,6 +28,7 @@ export class PlayerController {
         // Character mesh
         this.mesh = null;
         this.characterGroup = null;
+        this.character = null;
 
         // Other players
         this.otherPlayers = new Map();  // entityId -> { mesh, state, smoothing }
@@ -179,7 +181,7 @@ export class PlayerController {
         this.position.set(position.x, position.y, position.z);
         this.predictedPosition.copy(this.position);
 
-        // Create character mesh
+        // Create character mesh using detailed renderer
         this.createCharacterMesh(appearance);
 
         console.log('[Player] Initialized at', position);
@@ -189,32 +191,23 @@ export class PlayerController {
      * Create character mesh
      */
     createCharacterMesh(appearance = {}) {
-        this.characterGroup = new THREE.Group();
+        const params = {
+            gender: appearance.gender || 'female',
+            height: appearance.height || 1.0,
+            skin: `#${(appearance.skinColor || 0xffcc99).toString(16).padStart(6, '0')}`,
+            hair: appearance.hairStyle ?? 2,
+            hairColor: `#${(appearance.hairColor || 0xaa0000).toString(16).padStart(6, '0')}`,
+            jacketColor: `#${(appearance.jacket || 0x111111).toString(16).padStart(6, '0')}`,
+            shirtColor: `#${(appearance.shirt || 0x990000).toString(16).padStart(6, '0')}`,
+            pantsColor: `#${(appearance.pants || 0x223355).toString(16).padStart(6, '0')}`
+        };
 
-        // Body
-        const bodyGeom = new THREE.CapsuleGeometry(
-            this.physicsConfig.radius,
-            this.physicsConfig.height - this.physicsConfig.radius * 2,
-            4, 8
-        );
-        const bodyMat = new THREE.MeshStandardMaterial({
-            color: appearance.skinColor || 0xffcc99,
-            roughness: 0.8
-        });
-        const body = new THREE.Mesh(bodyGeom, bodyMat);
-        body.castShadow = true;
-        this.characterGroup.add(body);
+        this.character = new Character(true);
+        this.character.params = { ...this.character.params, ...params };
+        this.character.rebuild();
 
-        // Head
-        const headGeom = new THREE.SphereGeometry(0.2, 16, 16);
-        const head = new THREE.Mesh(headGeom, bodyMat);
-        head.position.y = this.physicsConfig.height / 2 + 0.1;
-        head.castShadow = true;
-        this.characterGroup.add(head);
-
-        // Set position
+        this.characterGroup = this.character.group;
         this.characterGroup.position.copy(this.position);
-
         this.scene.add(this.characterGroup);
         this.mesh = this.characterGroup;
     }
@@ -225,39 +218,28 @@ export class PlayerController {
     spawnOtherPlayer(entityId, state) {
         if (this.otherPlayers.has(entityId)) return;
 
-        const group = new THREE.Group();
+        const params = {
+            gender: state.appearance?.gender || 'female',
+            height: state.appearance?.height || 1.0,
+            skin: `#${(state.appearance?.skinColor || 0xffcc99).toString(16).padStart(6, '0')}`,
+            hair: state.appearance?.hairStyle ?? 2,
+            hairColor: `#${(state.appearance?.hairColor || 0xaa0000).toString(16).padStart(6, '0')}`,
+            jacketColor: `#${(state.appearance?.jacket || 0x111111).toString(16).padStart(6, '0')}`,
+            shirtColor: `#${(state.appearance?.shirt || 0x990000).toString(16).padStart(6, '0')}`,
+            pantsColor: `#${(state.appearance?.pants || 0x223355).toString(16).padStart(6, '0')}`
+        };
 
-        // Body
-        const bodyGeom = new THREE.CapsuleGeometry(
-            this.physicsConfig.radius,
-            this.physicsConfig.height - this.physicsConfig.radius * 2,
-            4, 8
-        );
-        const bodyMat = new THREE.MeshStandardMaterial({
-            color: state.appearance?.skinColor || 0xffcc99,
-            roughness: 0.8
-        });
-        const body = new THREE.Mesh(bodyGeom, bodyMat);
-        body.castShadow = true;
-        group.add(body);
+        const character = new Character(false);
+        character.params = { ...character.params, ...params };
+        character.rebuild();
 
-        // Head
-        const headGeom = new THREE.SphereGeometry(0.2, 16, 16);
-        const head = new THREE.Mesh(headGeom, bodyMat);
-        head.position.y = this.physicsConfig.height / 2 + 0.1;
-        head.castShadow = true;
-        group.add(head);
-
-        // Username label
-        if (state.username) {
-            // Would create text sprite here
-        }
-
-        group.position.set(state.position.x, state.position.y, state.position.z);
-        this.scene.add(group);
+        character.group.position.set(state.position.x, state.position.y, state.position.z);
+        character.group.rotation.y = state.yaw || 0;
+        this.scene.add(character.group);
 
         this.otherPlayers.set(entityId, {
-            mesh: group,
+            mesh: character.group,
+            character,
             state: state
         });
     }
@@ -408,6 +390,11 @@ export class PlayerController {
             if (player.targetYaw !== undefined) {
                 player.mesh.rotation.y = THREE.MathUtils.lerp(player.mesh.rotation.y, player.targetYaw, 0.15);
             }
+
+            if (player.character) {
+                const speed = player.smoothing.velocity.length();
+                player.character.animate(speed * 10);
+            }
         }
     }
 
@@ -547,6 +534,12 @@ export class PlayerController {
             targetScale,
             0.2
         );
+
+        // Animate limbs based on velocity
+        if (this.character) {
+            const speed = new THREE.Vector2(this.predictedVelocity.x, this.predictedVelocity.z).length();
+            this.character.animate(speed * 30);
+        }
     }
 
     /**
