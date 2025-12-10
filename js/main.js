@@ -3,7 +3,7 @@ import { WarManager } from './war-manager.js';
 import { PlayerController } from './player-controller.js';
 import { PhysicsSystem } from './physics.js';
 import { EnvironmentSystem } from './environment.js';
-import { initCharCreator, logChat, setGender, updateMinimap } from './ui.js';
+import { initCharCreator, initChatUI, logChat, setGender, updateMinimap } from './ui.js';
 import { playerInventory, inventoryUI } from './inventory.js';
 import { CONFIG } from './config.js';
 import { networkManager, NetworkPlayer, NetworkEntityType, MessageType } from './network-manager.js';
@@ -110,6 +110,16 @@ function init() {
     });
 
     previewChar = initCharCreator(() => isGameActive);
+
+    initChatUI({
+        onSend: (msg) => {
+            const username = document.getElementById('cc-username').value || 'Player';
+            logChat(username, msg);
+            if (CONFIG.networkEnabled && networkManager.isConnected) {
+                networkManager.sendChat(msg, username);
+            }
+        }
+    });
 }
 
 function startGame() {

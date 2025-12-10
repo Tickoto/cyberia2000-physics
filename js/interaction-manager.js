@@ -11,10 +11,18 @@ export class InteractionManager {
         this.heightSampler = (x, z) => 0;
         this.cooldowns = new Map();
         this.inventory = null; // Will be set by main.js
+        this._scanScratch = {
+            offset: new THREE.Vector3(),
+            toTarget: new THREE.Vector3()
+        };
     }
 
     setHeightSampler(fn) {
         this.heightSampler = fn;
+    }
+
+    sampleHeight(x, z) {
+        return this.heightSampler ? this.heightSampler(x, z) : 0;
     }
 
     setInventory(inventory) {
@@ -54,6 +62,49 @@ export class InteractionManager {
 
         this.objects.set(key, list);
         return list;
+    }
+
+    // Convenience: scan for nearest interactable in a forward cone
+    findNearestObject(position, yaw) {
+        const forward = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
+        const { offset, toTarget } = this._scanScratch;
+        let closest = null;
+        let closestDist = CONFIG.interactionRange;
+
+        for (const [, list] of this.objects) {
+            for (const obj of list) {
+                offset.copy(obj.position).sub(position);
+                const flatDist = Math.sqrt(offset.x * offset.x + offset.z * offset.z);
+                if (flatDist > CONFIG.interactionRange) continue;
+
+                toTarget.copy(offset).normalize();
+                const dot = forward.dot(toTarget);
+                if (dot < Math.cos(CONFIG.interactionScanAngle)) continue;
+
+                if (flatDist < closestDist) {
+                    closest = obj;
+                    closestDist = flatDist;
+                }
+            }
+        }
+
+        return closest ? { object: closest, distance: closestDist } : null;
+    }
+
+    showHint(targetInfo) {
+        const hint = document.getElementById('interaction-hint');
+        if (!hint) return;
+
+        const { object } = targetInfo;
+        const label = object.userData?.def?.name || 'Interact';
+        const rarity = object.userData?.def?.rarity || 'common';
+        hint.innerText = `[E] ${label} (${rarity})`;
+        hint.style.display = 'block';
+    }
+
+    hideHint() {
+        const hint = document.getElementById('interaction-hint');
+        if (hint) hint.style.display = 'none';
     }
 
     clearForChunk(key) {

@@ -4,6 +4,32 @@ import { Character } from './character.js';
 
 let interactionCallbacks = null;
 
+// Chat bootstrap so the UI works even when Enter key handling fails
+export function initChatUI({ onSend }) {
+    const input = document.getElementById('chat-input');
+    const button = document.getElementById('chat-send');
+
+    if (button) {
+        button.addEventListener('click', () => {
+            const value = input.value.trim();
+            if (!value) return;
+            onSend(value);
+            input.value = '';
+        });
+    }
+
+    if (input) {
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const value = input.value.trim();
+                if (!value) return;
+                onSend(value);
+                input.value = '';
+            }
+        });
+    }
+}
+
 export function logChat(user, msg) {
     const log = document.getElementById('chat-log');
     const div = document.createElement('div');
