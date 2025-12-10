@@ -4,11 +4,13 @@
  */
 
 import { CONFIG } from '../shared/config.js';
+import { FACTIONS } from './config.js';
 import { TerrainNoise } from '../shared/terrain-noise.js';
 import { NetworkClient } from './network-client.js';
 import { TerrainRenderer } from './terrain-renderer.js';
 import { VehicleRenderer } from './vehicle-renderer.js';
 import { PlayerController } from './player-controller.js';
+import { WarManager } from './war-manager.js';
 
 export class GameClient {
     constructor() {
@@ -22,6 +24,7 @@ export class GameClient {
         this.terrainRenderer = null;
         this.vehicleRenderer = null;
         this.playerController = null;
+        this.warManager = null;
 
         // Game state
         this.isRunning = false;
@@ -30,6 +33,9 @@ export class GameClient {
         // UI elements
         this.loadingScreen = null;
         this.gameUI = null;
+        this.chatLog = null;
+        this.chatInput = null;
+        this.warStatus = null;
 
         // Server URL
         this.serverUrl = 'ws://localhost:8080';
@@ -71,6 +77,9 @@ export class GameClient {
             this.networkClient,
             this.terrainRenderer
         );
+
+        // Initialize war manager (ambient AI battles)
+        this.warManager = new WarManager(this.scene);
 
         // Setup UI
         this.setupUI();
@@ -300,7 +309,36 @@ export class GameClient {
      */
     handleChatMessage(data) {
         console.log(`[Chat] ${data.username}: ${data.message}`);
-        // Would add to chat UI here
+        this.addChatMessage(data.username || 'Player', data.message);
+    }
+
+    /**
+     * Append message to chat UI
+     */
+    addChatMessage(sender, message) {
+        if (!this.chatLog) return;
+
+        const entry = document.createElement('div');
+        entry.textContent = `${sender}: ${message}`;
+        this.chatLog.appendChild(entry);
+        this.chatLog.scrollTop = this.chatLog.scrollHeight;
+    }
+
+    /**
+     * Send chat message to server
+     */
+    sendChat() {
+        if (!this.chatInput || !this.chatInput.value.trim()) return;
+
+        const message = this.chatInput.value.trim();
+        this.chatInput.value = '';
+
+        this.addChatMessage(this.username || 'You', message);
+        this.networkClient.sendChatMessage(message);
+
+        // Return focus to game view
+        this.chatInput.blur();
+        this.renderer?.domElement?.focus?.();
     }
 
     /**
@@ -338,6 +376,18 @@ export class GameClient {
         this.positionEl = document.getElementById('hud-coords');
         this.healthFill = document.getElementById('hud-health-fill');
         this.staminaFill = document.getElementById('hud-stamina-fill');
+        this.chatLog = document.getElementById('chat-log');
+        this.chatInput = document.getElementById('chat-input');
+        this.warStatus = document.getElementById('war-status');
+
+        if (this.chatInput) {
+            this.chatInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.sendChat();
+                }
+            });
+        }
     }
 
     /**
@@ -394,6 +444,30 @@ export class GameClient {
     }
 
     /**
+     * Update war status panel
+     */
+    updateWarStatus() {
+        if (!this.warStatus || !this.warManager) return;
+
+        const counts = { red: 0, green: 0, blue: 0 };
+        for (const unit of this.warManager.units) {
+            const factionKey = FACTIONS[unit.faction]?.key;
+            if (factionKey && counts[factionKey] !== undefined) {
+                counts[factionKey]++;
+            }
+        }
+
+        const updateCount = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        };
+
+        updateCount('faction-red-count', counts.red);
+        updateCount('faction-green-count', counts.green);
+        updateCount('faction-blue-count', counts.blue);
+    }
+
+    /**
      * Connect to server
      */
     connect() {
@@ -447,6 +521,11 @@ export class GameClient {
         const playerPos = this.playerController.getPosition();
         this.terrainRenderer.update(playerPos);
 
+        // Update ambient war simulation
+        if (this.warManager) {
+            this.warManager.update(deltaTime, playerPos);
+        }
+
         // Update directional light to follow player
         if (this.directionalLight && playerPos) {
             this.directionalLight.position.set(
@@ -459,6 +538,9 @@ export class GameClient {
 
         // Update HUD
         this.updateHUD();
+
+        // Update war status
+        this.updateWarStatus();
     }
 
     /**

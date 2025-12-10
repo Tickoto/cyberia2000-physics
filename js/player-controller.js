@@ -304,7 +304,7 @@ export class PlayerController {
         const pendingInputs = this.networkClient.getPendingInputs();
         for (const inputData of pendingInputs) {
             if (inputData.seq > state.lastInputSeq) {
-                this.applyInput(inputData.input, 1 / 60);
+                this.applyInput(inputData, 1 / 60);
             }
         }
     }
@@ -419,17 +419,27 @@ export class PlayerController {
      * Apply input for client-side prediction
      */
     applyInput(input, deltaTime) {
+        const safeInput = {
+            forward: 0,
+            right: 0,
+            jump: false,
+            run: false,
+            crouch: false,
+            yaw: this.yaw,
+            ...input
+        };
+
         // Calculate movement direction
-        const cos = Math.cos(this.yaw);
-        const sin = Math.sin(this.yaw);
+        const cos = Math.cos(safeInput.yaw);
+        const sin = Math.sin(safeInput.yaw);
 
         const forwardX = -sin;
         const forwardZ = -cos;
         const rightX = cos;
         const rightZ = -sin;
 
-        let moveX = input.forward * forwardX + input.right * rightX;
-        let moveZ = input.forward * forwardZ + input.right * rightZ;
+        let moveX = safeInput.forward * forwardX + safeInput.right * rightX;
+        let moveZ = safeInput.forward * forwardZ + safeInput.right * rightZ;
 
         // Normalize
         const moveLen = Math.sqrt(moveX * moveX + moveZ * moveZ);
@@ -439,8 +449,8 @@ export class PlayerController {
         }
 
         // Determine speed
-        this.isRunning = input.run && this.stamina > 0;
-        this.isCrouching = input.crouch;
+        this.isRunning = safeInput.run && this.stamina > 0;
+        this.isCrouching = safeInput.crouch;
 
         let targetSpeed;
         if (this.isCrouching) {
@@ -467,7 +477,7 @@ export class PlayerController {
         }
 
         // Jump
-        if (input.jump && this.isGrounded && !this.isCrouching) {
+        if (safeInput.jump && this.isGrounded && !this.isCrouching) {
             this.predictedVelocity.y = this.config.jumpForce;
             this.isGrounded = false;
         }

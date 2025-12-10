@@ -396,24 +396,44 @@ export class TerrainRenderer {
 
         // Remove terrain mesh
         this.scene.remove(chunk.mesh);
-        chunk.mesh.geometry.dispose();
+        if (chunk.mesh.geometry) {
+            chunk.mesh.geometry.dispose();
+        }
+        if (chunk.mesh.material) {
+            this.disposeMaterial(chunk.mesh.material);
+        }
 
         // Remove buildings
         for (const building of chunk.buildings) {
             this.scene.remove(building);
-            building.geometry.dispose();
-            building.material.dispose();
+            building.traverse(obj => {
+                if (obj.geometry) obj.geometry.dispose();
+                if (obj.material) this.disposeMaterial(obj.material);
+            });
         }
 
-        // Remove flora
+        // Remove flora (groups with nested meshes)
         for (const flora of chunk.flora) {
             this.scene.remove(flora);
-            flora.geometry.dispose();
-            flora.material.dispose();
+            flora.traverse(obj => {
+                if (obj.geometry) obj.geometry.dispose();
+                if (obj.material) this.disposeMaterial(obj.material);
+            });
         }
 
         this.chunks.delete(key);
         this.loadedChunks.delete(key);
+    }
+
+    /**
+     * Safely dispose single or multi-material objects
+     */
+    disposeMaterial(material) {
+        if (Array.isArray(material)) {
+            material.forEach(mat => mat?.dispose());
+        } else {
+            material.dispose?.();
+        }
     }
 
     /**
