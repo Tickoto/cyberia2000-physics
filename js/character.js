@@ -26,6 +26,10 @@ export class Character {
         this.aiState = 'idle';
         this.aiTimer = 0;
         this.targetPos = new THREE.Vector3();
+
+        this.animationState = 'idle';
+        this.animationTime = 0;
+        this.baseHipHeight = 0.9;
         
         this.rebuild();
     }
@@ -50,6 +54,7 @@ export class Character {
         const tHolster = new THREE.MeshLambertMaterial({ color: 0x050505 });
 
         const s = height;
+        this.baseHipHeight = 0.9 * s;
         
         // Gender-specific proportions
         const hipWidth = isFemale ? 0.40 : 0.36;
@@ -58,7 +63,7 @@ export class Character {
 
         // Hips - MODEL FACES +Z (forward)
         const hips = new THREE.Mesh(new THREE.BoxGeometry(hipWidth, 0.22, 0.26), tJeans);
-        hips.position.y = 0.9 * s;
+        hips.position.y = this.baseHipHeight;
         this.meshGroup.add(hips);
         this.limbs.hips = hips;
 
@@ -236,15 +241,95 @@ export class Character {
         hips.add(shadow);
     }
 
-    animate(speed) {
-        if (!this.limbs.leftLeg) return;
-        const time = Date.now() * 0.015;
-        const angle = Math.sin(time) * Math.min(speed * 0.03, 0.5);
+    resetPose() {
+        const resetLimb = (limbName) => {
+            if (this.limbs[limbName]) {
+                this.limbs[limbName].rotation.set(0, 0, 0);
+            }
+        };
 
-        this.limbs.leftLeg.rotation.x = angle;
-        this.limbs.rightLeg.rotation.x = -angle;
-        this.limbs.leftArm.rotation.x = -angle;
-        this.limbs.rightArm.rotation.x = angle;
+        resetLimb('leftLeg');
+        resetLimb('rightLeg');
+        resetLimb('leftArm');
+        resetLimb('rightArm');
+        resetLimb('hips');
+
+        this.meshGroup.position.y = 0;
+        if (this.limbs.hips) this.limbs.hips.position.y = this.baseHipHeight;
+    }
+
+    setAnimation(state) {
+        if (this.animationState !== state) {
+            this.animationState = state;
+            this.animationTime = 0;
+        }
+    }
+
+    updateAnimation(delta = 0.016, speed = 0) {
+        if (!this.limbs.leftLeg) return;
+
+        this.animationTime += delta;
+        const t = this.animationTime;
+        this.resetPose();
+
+        switch (this.animationState) {
+            case 'idle': {
+                const breathe = Math.sin(t * 2) * 0.05;
+                const sway = Math.sin(t * 1.2) * 0.03;
+                this.limbs.leftArm.rotation.x = -0.1 + breathe;
+                this.limbs.rightArm.rotation.x = -0.1 - breathe;
+                this.limbs.hips.rotation.y = sway * 0.4;
+                this.limbs.hips.position.y = this.baseHipHeight + Math.sin(t * 1.5) * 0.02;
+                break;
+            }
+            case 'walk':
+            case 'run': {
+                const pace = 0.8 + Math.min(speed, 20) * 0.05;
+                const cadence = (this.animationState === 'run' ? 8 : 5) * pace;
+                const amplitude = (this.animationState === 'run' ? 0.85 : 0.45) * (0.7 + pace * 0.2);
+                const cycle = Math.sin(t * cadence);
+                const lift = Math.abs(Math.cos(t * cadence)) * (this.animationState === 'run' ? 0.07 : 0.04) * pace;
+
+                this.limbs.leftLeg.rotation.x = cycle * amplitude;
+                this.limbs.rightLeg.rotation.x = -cycle * amplitude;
+                this.limbs.leftArm.rotation.x = -cycle * amplitude * 0.7;
+                this.limbs.rightArm.rotation.x = cycle * amplitude * 0.7;
+                this.limbs.hips.position.y = this.baseHipHeight + lift;
+                break;
+            }
+            case 'jump': {
+                const jumpDuration = 1.2;
+                const jumpT = Math.min(t / jumpDuration, 1);
+                const rise = Math.sin(jumpT * Math.PI);
+                const tuck = Math.sin(Math.min(jumpT, 0.6) * Math.PI);
+
+                this.meshGroup.position.y = rise * 0.6;
+                this.limbs.leftLeg.rotation.x = 0.5 - tuck * 0.4;
+                this.limbs.rightLeg.rotation.x = 0.5 - tuck * 0.4;
+                this.limbs.leftArm.rotation.x = -0.5;
+                this.limbs.rightArm.rotation.x = -0.5;
+
+                if (jumpT >= 1) this.setAnimation('idle');
+                break;
+            }
+            case 'wave': {
+                const wave = Math.sin(t * 5) * 0.6;
+                this.limbs.leftArm.rotation.x = -0.2;
+                this.limbs.rightArm.rotation.x = 0.15;
+                this.limbs.rightArm.rotation.z = wave - 0.5;
+                this.limbs.rightArm.rotation.y = Math.sin(t * 2) * 0.25;
+                this.limbs.hips.rotation.y = Math.sin(t * 1.5) * 0.2;
+                break;
+            }
+            default:
+                break;
+        }
+    }
+
+    animate(speed, delta = 0.016) {
+        const nextState = speed > 10 ? 'run' : speed > 1 ? 'walk' : 'idle';
+        this.setAnimation(nextState);
+        this.updateAnimation(delta, speed);
     }
 
     updateNPC(delta) {
