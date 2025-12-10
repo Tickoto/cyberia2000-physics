@@ -127,17 +127,17 @@ export class ModelRig {
         storeBindPose(shirt);
 
         const chestDetail = new Mesh(new BoxGeometry(0.28, 0.14, 0.08), MATERIALS.shirt);
-        chestDetail.position.set(0, 0.08, -0.11);
+        chestDetail.position.set(0, 0.1, -0.11);
         chestGroup.add(chestDetail);
         storeBindPose(chestDetail);
 
         const chestLeft = new Mesh(new BoxGeometry(0.12, 0.12, 0.06), MATERIALS.shirt);
-        chestLeft.position.set(-0.07, 0.06, -0.13);
+        chestLeft.position.set(-0.07, 0.09, -0.13);
         chestGroup.add(chestLeft);
         storeBindPose(chestLeft);
 
         const chestRight = new Mesh(new BoxGeometry(0.12, 0.12, 0.06), MATERIALS.shirt);
-        chestRight.position.set(0.07, 0.06, -0.13);
+        chestRight.position.set(0.07, 0.09, -0.13);
         chestGroup.add(chestRight);
         storeBindPose(chestRight);
 
@@ -160,6 +160,11 @@ export class ModelRig {
         collar.position.set(0, 0.3, 0.04);
         chestGroup.add(collar);
         storeBindPose(collar);
+
+        const neck = new Mesh(new BoxGeometry(0.12, 0.08, 0.12), MATERIALS.skin);
+        neck.position.set(0, 0.32, 0.0);
+        chestGroup.add(neck);
+        storeBindPose(neck);
 
         const headMaterials = [MATERIALS.skin, MATERIALS.skin, MATERIALS.skin, MATERIALS.skin, MATERIALS.skin, MATERIALS.face];
         const head = new Mesh(new BoxGeometry(0.24, 0.28, 0.24), headMaterials);
@@ -205,13 +210,13 @@ export class ModelRig {
         this.limbs.leftLeg = leftLeg;
         storeBindPose(leftLeg);
 
-        const holsterL = new Mesh(new BoxGeometry(0.07, 0.24, 0.17), MATERIALS.holster);
-        holsterL.position.set(0.06, 0.1, 0);
+        const holsterL = new Mesh(new BoxGeometry(0.07, 0.24, 0.2), MATERIALS.holster);
+        holsterL.position.set(0.06, 0.1, 0.01);
         leftLeg.add(holsterL);
         storeBindPose(holsterL);
 
-        const strapL = new Mesh(new BoxGeometry(0.15, 0.05, 0.17), MATERIALS.holster);
-        strapL.position.y = 0.1;
+        const strapL = new Mesh(new BoxGeometry(0.15, 0.05, 0.16), MATERIALS.holster);
+        strapL.position.set(0, 0.1, 0.01);
         leftLeg.add(strapL);
         storeBindPose(strapL);
 
@@ -221,13 +226,13 @@ export class ModelRig {
         this.limbs.rightLeg = rightLeg;
         storeBindPose(rightLeg);
 
-        const holsterR = new Mesh(new BoxGeometry(0.07, 0.24, 0.17), MATERIALS.holster);
-        holsterR.position.set(-0.06, 0.1, 0);
+        const holsterR = new Mesh(new BoxGeometry(0.07, 0.24, 0.2), MATERIALS.holster);
+        holsterR.position.set(-0.06, 0.1, 0.01);
         rightLeg.add(holsterR);
         storeBindPose(holsterR);
 
-        const strapR = new Mesh(new BoxGeometry(0.15, 0.05, 0.17), MATERIALS.holster);
-        strapR.position.y = 0.1;
+        const strapR = new Mesh(new BoxGeometry(0.15, 0.05, 0.16), MATERIALS.holster);
+        strapR.position.set(0, 0.1, 0.01);
         rightLeg.add(strapR);
         storeBindPose(strapR);
 
@@ -276,6 +281,11 @@ export class ModelRig {
         band.position.set(0, -0.02, 0.13);
         chestGroup.add(band);
         storeBindPose(band);
+
+        const backSigil = new Mesh(new BoxGeometry(0.22, 0.24, 0.015), MATERIALS.emissive);
+        backSigil.position.set(0, 0.08, 0.16);
+        chestGroup.add(backSigil);
+        storeBindPose(backSigil);
 
         const shadow = new Mesh(new CircleGeometry(0.55, 12), MATERIALS.accent.clone());
         shadow.material.transparent = true;
