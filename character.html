@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Character Animation Preview</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: 'Arial', sans-serif; background: #080a0f; color: #d6e2ff; overflow: hidden; }
+        #ui {
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            background: rgba(6, 8, 12, 0.9);
+            border: 1px solid #1f2a38;
+            border-radius: 8px;
+            padding: 12px;
+            width: 260px;
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.5);
+        }
+        #ui h1 { margin: 0 0 8px 0; font-size: 1.2rem; letter-spacing: 0.05em; color: #8ad1ff; }
+        #ui p { margin: 4px 0 12px; color: #9ab5d4; }
+        .button-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+        button {
+            background: linear-gradient(180deg, #0f1724 0%, #0a0f18 100%);
+            border: 1px solid #213046;
+            color: #e8f4ff;
+            padding: 8px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            flex: 1;
+            min-width: 70px;
+        }
+        button:hover { border-color: #3c83ff; color: #fff; }
+        button.active { background: #19395c; border-color: #3c83ff; }
+        label { font-size: 0.85rem; color: #9ab5d4; display: block; margin-bottom: 4px; }
+        input[type="range"] { width: 100%; }
+        .hint { font-size: 0.8rem; color: #7f94b0; margin-top: 8px; }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <h1>Character Animations</h1>
+        <p>Quick sandbox to preview the player model and animation poses.</p>
+        <div class="button-row">
+            <button data-state="idle" class="active">Idle</button>
+            <button data-state="walk">Walk</button>
+            <button data-state="run">Run</button>
+        </div>
+        <div class="button-row">
+            <button data-state="jump">Jump</button>
+            <button data-state="wave">Wave</button>
+        </div>
+        <label for="speed">Movement speed</label>
+        <input type="range" id="speed" min="0" max="15" value="6" step="0.1">
+        <label for="auto-rotate" style="margin-top:10px; display:flex; align-items:center; gap:6px;">
+            <input type="checkbox" id="auto-rotate" checked>
+            Auto rotate character
+        </label>
+        <div class="hint">Use the slider to increase the cadence of the walk/run loops.</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    <script type="module">
+        import { Character } from './js/character.js';
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.body.appendChild(renderer.domElement);
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color('#0b111b');
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(3, 1.8, 3.6);
+
+        const hemi = new THREE.HemisphereLight(0xb4cfff, 0x0b0f14, 1.2);
+        const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+        dir.position.set(5, 10, 3);
+        scene.add(hemi, dir);
+
+        const ground = new THREE.Mesh(
+            new THREE.PlaneGeometry(30, 30),
+            new THREE.MeshStandardMaterial({ color: '#0f1724', roughness: 0.95 })
+        );
+        ground.rotation.x = -Math.PI / 2;
+        scene.add(ground);
+
+        const grid = new THREE.GridHelper(16, 16, 0x1f4b99, 0x0e203f);
+        scene.add(grid);
+
+        const character = new Character(true);
+        scene.add(character.group);
+        character.group.position.set(0, 0, 0);
+
+        const controlsPanel = document.querySelectorAll('button[data-state]');
+        let currentState = 'idle';
+        let speedScale = Number(document.getElementById('speed').value);
+        let autoRotate = document.getElementById('auto-rotate').checked;
+
+        controlsPanel.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                currentState = btn.dataset.state;
+                character.setAnimation(currentState);
+                controlsPanel.forEach((b) => b.classList.toggle('active', b === btn));
+            });
+        });
+
+        document.getElementById('speed').addEventListener('input', (e) => {
+            speedScale = Number(e.target.value);
+        });
+
+        document.getElementById('auto-rotate').addEventListener('change', (e) => {
+            autoRotate = e.target.checked;
+        });
+
+        const clock = new THREE.Clock();
+        function render() {
+            const delta = clock.getDelta();
+            character.updateAnimation(delta, speedScale);
+
+            if (autoRotate) {
+                character.group.rotation.y += delta * 0.6;
+            }
+
+            camera.lookAt(character.group.position.x, 1.2, character.group.position.z);
+            renderer.render(scene, camera);
+            requestAnimationFrame(render);
+        }
+        render();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
