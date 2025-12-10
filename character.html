@@ -42,15 +42,7 @@
     <div id="ui">
         <h1>Character Animations</h1>
         <p>Quick sandbox to preview the player model and animation poses.</p>
-        <div class="button-row">
-            <button data-state="idle" class="active">Idle</button>
-            <button data-state="walk">Walk</button>
-            <button data-state="run">Run</button>
-        </div>
-        <div class="button-row">
-            <button data-state="jump">Jump</button>
-            <button data-state="wave">Wave</button>
-        </div>
+        <div id="state-buttons" class="button-row" style="flex-wrap: wrap;"></div>
         <label for="speed">Movement speed</label>
         <input type="range" id="speed" min="0" max="15" value="6" step="0.1">
         <label for="auto-rotate" style="margin-top:10px; display:flex; align-items:center; gap:6px;">
@@ -58,11 +50,12 @@
             Auto rotate character
         </label>
         <div class="hint">Use the slider to increase the cadence of the walk/run loops.</div>
+        <div class="hint">New poses: breathing, stretch, crouch, combat idle, and look-around.</div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
     <script type="module">
-        import { Character } from './js/character.js';
+        import { ModelRig } from './model.js';
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -90,21 +83,31 @@
         const grid = new THREE.GridHelper(16, 16, 0x1f4b99, 0x0e203f);
         scene.add(grid);
 
-        const character = new Character(true);
+        const character = new ModelRig();
         scene.add(character.group);
         character.group.position.set(0, 0, 0);
-
-        const controlsPanel = document.querySelectorAll('button[data-state]');
         let currentState = 'idle';
         let speedScale = Number(document.getElementById('speed').value);
         let autoRotate = document.getElementById('auto-rotate').checked;
 
-        controlsPanel.forEach((btn) => {
+        const stateContainer = document.getElementById('state-buttons');
+        const stateButtons = [];
+        character.animationList.forEach((state) => {
+            const btn = document.createElement('button');
+            btn.dataset.state = state;
+            const label = state
+                .replace(/([a-z])([A-Z])/g, '$1 $2')
+                .replace(/[-_]/g, ' ')
+                .replace(/\b([a-z])/g, (m, c) => c.toUpperCase());
+            btn.textContent = label;
+            btn.classList.toggle('active', state === currentState);
             btn.addEventListener('click', () => {
-                currentState = btn.dataset.state;
-                character.setAnimation(currentState);
-                controlsPanel.forEach((b) => b.classList.toggle('active', b === btn));
+                currentState = state;
+                character.setAnimation(state);
+                stateButtons.forEach((b) => b.classList.toggle('active', b === btn));
             });
+            stateButtons.push(btn);
+            stateContainer.appendChild(btn);
         });
 
         document.getElementById('speed').addEventListener('input', (e) => {
