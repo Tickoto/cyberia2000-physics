@@ -15,6 +15,9 @@ export class InteractionManager {
             offset: new THREE.Vector3(),
             toTarget: new THREE.Vector3()
         };
+
+        this.interactionRay = this.createInteractionRay();
+        this.scene.add(this.interactionRay);
     }
 
     setHeightSampler(fn) {
@@ -156,6 +159,31 @@ export class InteractionManager {
         const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false }));
         sprite.scale.set(6, 1.5, 1);
         return sprite;
+    }
+
+    createInteractionRay() {
+        const geometry = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(),
+            new THREE.Vector3()
+        ]);
+        const material = new THREE.LineBasicMaterial({ color: 0xff4444, transparent: true, opacity: 0.9 });
+        const line = new THREE.Line(geometry, material);
+        line.visible = false;
+        line.frustumCulled = false;
+        return line;
+    }
+
+    updateInteractionRay(origin, direction, length = CONFIG.interactionRange) {
+        if (!this.interactionRay) return;
+        const positions = this.interactionRay.geometry.attributes.position.array;
+        positions[0] = origin.x;
+        positions[1] = origin.y;
+        positions[2] = origin.z;
+        positions[3] = origin.x + direction.x * length;
+        positions[4] = origin.y + direction.y * length;
+        positions[5] = origin.z + direction.z * length;
+        this.interactionRay.geometry.attributes.position.needsUpdate = true;
+        this.interactionRay.visible = true;
     }
 
     findClosest(player, camera) {
