@@ -98,6 +98,7 @@ export class PlayerController {
             forward: new THREE.Vector3(),
             right: new THREE.Vector3(),
             temp: new THREE.Vector3(),
+            head: new THREE.Vector3(),
             cameraTarget: new THREE.Vector3()
         };
     }
@@ -228,6 +229,16 @@ export class PlayerController {
 
     tryInteract() {
         if (!this.interactionManager) return;
+        const { forward, head } = this._scratch;
+        head.copy(this.char.group.position);
+        head.y += 1.6;
+
+        forward.set(
+            Math.sin(this.yaw) * Math.cos(this.pitch),
+            Math.sin(this.pitch),
+            Math.cos(this.yaw) * Math.cos(this.pitch)
+        ).normalize();
+
         const target = this.interactionManager.findNearestObject(this.char.group.position, this.yaw);
         if (target !== this.lastInteractionTarget) {
             if (target) {
@@ -237,6 +248,12 @@ export class PlayerController {
             }
             this.lastInteractionTarget = target;
         }
+
+        let rayLength = CONFIG.interactionRange;
+        if (target?.object) {
+            rayLength = Math.min(rayLength, head.distanceTo(target.object.position));
+        }
+        this.interactionManager.updateInteractionRay(head, forward, rayLength);
     }
 
     // Legacy APIs used by game-client.js
